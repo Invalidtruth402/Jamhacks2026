@@ -1,0 +1,49 @@
+mport sys
+sys.path.append('/usr/lib/python3/dist-packages')
+
+import os
+from time import sleep
+from picamzero import Camera
+from ultralytics import YOLO
+import cv2
+
+model = YOLO("best.pt")
+
+home_dir = os.environ['HOME']
+cam = Camera()
+
+cam.contrast = 1.2   
+cam.exposure = 8000   # Fast shutter speed (1/125s) to darken image and freeze motion
+cam.gain = 1.5        # Low gain prevents a grainy, washed-out look
+cam.white_balance = 'indoor'
+
+sleep(2)
+
+cam.start_preview()
+print("Initializing sensor...")
+
+
+
+print("Starting live tracking... Click the video window and press 'q' to quit.")
+
+try:
+    while True:
+        frame = cam.capture_array()
+       
+        results = model(frame, stream=True)
+       
+        for r in results:
+            annotated_frame = r.plot()
+
+        cv2.imshow("Live YOLO Tracking", cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR))
+       
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+except KeyboardInterrupt:
+    print("\nStream stopped via terminal/Thonny.")
+
+finally:
+    cam.stop_preview()
+    cv2.destroyAllWindows()
+    print("Camera safely closed. Done!")
